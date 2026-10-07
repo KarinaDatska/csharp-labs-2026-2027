@@ -35,6 +35,16 @@ builder.Services.AddScoped<IChartDataService, ChartDataService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IFolderSyncService, FolderSyncService>();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 builder.Services
     .AddControllers()
     .AddJsonOptions(options =>
@@ -51,6 +61,19 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUi(options =>
     {
         options.DocumentPath = "/openapi/v1.json";
+    });
+}
+
+app.UseCors("AllowAll");
+
+var frontPath = Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "lab1.Front"));
+if (Directory.Exists(frontPath))
+{
+    app.UseFileServer(new FileServerOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(frontPath),
+        RequestPath = "",
+        EnableDefaultFiles = true
     });
 }
 
