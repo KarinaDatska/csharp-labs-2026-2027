@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ArrayOfAirQualityRecord xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<AirQualityRecord>
+		<Id>1</Id>
+		<Rank>1</Rank>
+		<CityAndCountry>Kyiv Ukraine</CityAndCountry>
+		<AveragePollution>25.5</AveragePollution>
+		<Measurements>
+			<January>20.1</January>
+			<February>22.3</February>
+			<March>24.0</March>
+			<April>26.5</April>
+			<May>28.1</May>
+			<June>30.2</June>
+			<July>29.4</July>
+			<August>27.0</August>
+			<September>25.2</September>
+			<October>23.1</October>
+			<November>21.0</November>
+			<December>19.5</December>
+		</Measurements>
+	</AirQualityRecord>
+	<AirQualityRecord>
+		<Id>2</Id>
+		<Rank>2</Rank>
+		<CityAndCountry>Lviv Ukraine</CityAndCountry>
+		<AveragePollution>18.2</AveragePollution>
+		<Measurements>
+			<January>15.0</January>
+			<February>16.2</February>
+			<March>18.0</March>
+			<April>20.1</April>
+			<May>22.4</May>
+			<June>24.1</June>
+			<July>23.0</July>
+			<August>21.5</August>
+			<September>19.0</September>
+			<October>17.2</October>
+			<November>15.1</November>
+			<December>14.0</December>
+		</Measurements>
+	</AirQualityRecord>
+</ArrayOfAirQualityRecord>

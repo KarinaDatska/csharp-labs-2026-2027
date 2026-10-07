@@ -1,0 +1,25 @@
+# Rider
+.idea/
+*.sln.iml
+
+# Visual Studio
+.vs/
+*.user
+*.userosscache
+*.suo
+
+# Build
+bin/
+obj/
+
+# VS Code
+*.vscode/
+
+# Logs
+*.log
+
+# Generated files
+src/lab1/lab1.WebApi/GeneratedFiles/
+src/lab1/lab1.WebApi/Reports/
+Reports/
+GeneratedFiles/

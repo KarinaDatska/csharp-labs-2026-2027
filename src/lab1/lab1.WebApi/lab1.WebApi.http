@@ -1,0 +1,208 @@
+@host = http://localhost:5112
+
+### ============================================================
+### CSV IMPORT & EXPORT
+### ============================================================
+
+### CSV Import
+POST {{host}}/api/v2/csv/import
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="aqi_data.csv"
+Content-Type: text/csv
+
+< ../lab1.Infrastructure/Data/aqi_data.csv
+--boundary--
+
+### CSV Export
+GET {{host}}/api/v2/csv/export
+Accept: text/csv
+
+### ============================================================
+### JSON IMPORT & EXPORT
+### ============================================================
+
+### JSON Import
+POST {{host}}/api/v2/json/import
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="air_quality.json"
+Content-Type: application/json
+
+< ../lab1.Infrastructure/Data/Json/air_quality.json
+--boundary--
+
+### JSON Export
+GET {{host}}/api/v2/json/export
+Accept: application/json
+
+### ============================================================
+### XML IMPORT & EXPORT
+### ============================================================
+
+### XML Import
+POST {{host}}/api/v2/xml/import
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="air_quality.xml"
+Content-Type: text/xml
+
+< ../lab1.Infrastructure/Data/Xml/air_quality.xml
+--boundary--
+
+### XML Export
+GET {{host}}/api/v2/xml/export
+Accept: text/xml
+
+### ============================================================
+### XLSX IMPORT & EXPORT
+### ============================================================
+
+### XLSX Import
+POST {{host}}/api/v2/xlsx/import
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="air_quality.xlsx"
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+< ../lab1.Infrastructure/Data/Xlsx/air_quality.xlsx
+--boundary--
+
+### XLSX Export
+GET {{host}}/api/v2/xlsx/export
+Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+### ============================================================
+### RECORDS / ANALYTICS
+### ============================================================
+
+### Get All Records
+GET {{host}}/api/v2/records
+Accept: application/json
+
+### Get Record By ID
+GET {{host}}/api/v2/records/1
+Accept: application/json
+
+### Search By City
+GET {{host}}/api/v2/records/search?city=Kyiv
+Accept: application/json
+
+### Filter Records - City
+GET {{host}}/api/v2/records/filters?city=India
+Accept: application/json
+
+### Filter Records - Rank Range
+GET {{host}}/api/v2/records/filters?minRank=1&maxRank=10
+Accept: application/json
+
+### Filter Records - Average Pollution Range
+GET {{host}}/api/v2/records/filters?minAveragePollution=100&maxAveragePollution=200
+Accept: application/json
+
+### Sort Records - By Rank Ascending
+GET {{host}}/api/v2/records/sort?sortBy=Rank&direction=Ascending
+Accept: application/json
+
+### Sort Records - By Rank Descending
+GET {{host}}/api/v2/records/sort?sortBy=Rank&direction=Descending
+Accept: application/json
+
+### Sort Records - By City
+GET {{host}}/api/v2/records/sort?sortBy=CityAndCountry&direction=Ascending
+Accept: application/json
+
+### Sort Records - By Average Pollution Descending
+GET {{host}}/api/v2/records/sort?sortBy=AveragePollution&direction=Descending
+Accept: application/json
+
+### Analytics - Sum of Average Pollution
+GET {{host}}/api/v2/records/analytics/sum
+Accept: application/json
+
+### Analytics - Median of Average Pollution
+GET {{host}}/api/v2/records/analytics/median
+Accept: application/json
+
+### Analytics - Record with Minimum Average Pollution
+GET {{host}}/api/v2/records/analytics/min
+Accept: application/json
+
+### Analytics - Record with Maximum Average Pollution
+GET {{host}}/api/v2/records/analytics/max
+Accept: application/json
+
+### Analytics - Total Count
+GET {{host}}/api/v2/records/analytics/count
+Accept: application/json
+
+### ============================================================
+### CHARTS (ScottPlot PNG)
+### ============================================================
+
+### Top 10 Most Polluted Cities Bar Chart
+GET {{host}}/api/v2/charts/top-polluted
+Accept: image/png
+
+### Air Quality Categories Distribution Pie Chart
+GET {{host}}/api/v2/charts/distribution
+Accept: image/png
+
+### Monthly Seasonal Pollution Trend Line Chart
+GET {{host}}/api/v2/charts/monthly-trend
+Accept: image/png
+
+### ============================================================
+### REPORTS
+### ============================================================
+
+### Excel XLSX Report
+GET {{host}}/api/v2/reports/xlsx
+Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+### Word DOCX Lab Report
+POST {{host}}/api/v2/reports/docx
+Content-Type: application/json
+Accept: application/vnd.openxmlformats-officedocument.wordprocessingml.document
+
+{
+  "studentName": "Каріша",
+  "group": "КН-21",
+  "variant": "1",
+  "datasetDescription": "Air Quality dataset containing PM2.5 measurements and monthly statistics for cities worldwide."
+}
+
+### ============================================================
+### TEST FILE GENERATOR
+### ============================================================
+
+### Generate Test Files
+POST {{host}}/api/v1/test-files/generate?folderCount=5&filesPerFolder=5
+
+### ============================================================
+### FOLDER SYNC
+### ============================================================
+
+### Analyze Folder Sync Changes
+POST {{host}}/api/v1/folder-sync/analyze
+Content-Type: application/json
+
+{
+  "sourceDirectory": "C:\\temp\\source",
+  "targetDirectory": "C:\\temp\\target",
+  "direction": "SourceToTarget"
+}
+
+### Execute Folder Synchronization
+POST {{host}}/api/v1/folder-sync/execute
+Content-Type: application/json
+
+{
+  "sourceDirectory": "C:\\temp\\source",
+  "targetDirectory": "C:\\temp\\target",
+  "direction": "SourceToTarget"
+}

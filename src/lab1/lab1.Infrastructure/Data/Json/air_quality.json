@@ -1,0 +1,42 @@
+[
+  {
+    "Id": 1,
+    "Rank": 1,
+    "CityAndCountry": "Kyiv Ukraine",
+    "AveragePollution": 25.5,
+    "Measurements": {
+      "January": 20.1,
+      "February": 22.3,
+      "March": 24.0,
+      "April": 26.5,
+      "May": 28.1,
+      "June": 30.2,
+      "July": 29.4,
+      "August": 27.0,
+      "September": 25.2,
+      "October": 23.1,
+      "November": 21.0,
+      "December": 19.5
+    }
+  },
+  {
+    "Id": 2,
+    "Rank": 2,
+    "CityAndCountry": "Lviv Ukraine",
+    "AveragePollution": 18.2,
+    "Measurements": {
+      "January": 15.0,
+      "February": 16.2,
+      "March": 18.0,
+      "April": 20.1,
+      "May": 22.4,
+      "June": 24.1,
+      "July": 23.0,
+      "August": 21.5,
+      "September": 19.0,
+      "October": 17.2,
+      "November": 15.1,
+      "December": 14.0
+    }
+  }
+]
