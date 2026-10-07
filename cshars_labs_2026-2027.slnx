@@ -6,4 +6,9 @@
     <Project Path="src/lab1/lab1.Infrastructure/lab1.Infrastructure.csproj" />
     <Project Path="src/lab1/lab1.WebApi/lab1.WebApi.csproj" />
   </Folder>
+  <Folder Name="/src/lab1/lab1.Front/">
+    <File Path="index.html" />
+    <File Path="main.js" />
+    <File Path="style.css" />
+  </Folder>
 </Solution>
