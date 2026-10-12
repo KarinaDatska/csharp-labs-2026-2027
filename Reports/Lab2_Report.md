@@ -168,7 +168,7 @@ classDiagram
       /lab1.Infrastructure  --> Робота з файлами (CsvHelper, ClosedXML, OpenXml, ScottPlot)
       /lab1.WebApi          --> ASP.NET Core контролери, DI-контейнер, Swagger OpenAPI
       /lab1.Front           --> Клієнтський SPA-інтерфейс (HTML5, Modern CSS, ES6 JS)
-  /docs                     --> Звіти та документація до лабораторних робіт
+  /Reports                  --> Звіти та документація до лабораторних робіт
 ```
 
 ### Призначення шарів
@@ -334,7 +334,7 @@ classDiagram
    - **Особливості:** Точкові маркери з лінійною інтерполяцією товщиною 3 px.
 
 Згенеровані файли автоматично зберігаються за шляхом:  
-`src/lab1/lab1.WebApi/Reports/Charts/` та збережені у репозиторії: `docs/charts/` (`top-polluted.png`, `distribution.png`, `monthly-trend.png`).
+`src/lab1/lab1.WebApi/Reports/Charts/` та збережені у репозиторії: `Reports/charts/` (`top-polluted.png`, `distribution.png`, `monthly-trend.png`).
 
 ---
 
@@ -489,8 +489,8 @@ public byte[] CreateTopPollutedBarChart(IEnumerable<AirQualityRecord> records)
 ```
 
 ### Додаток B. Згенеровані звіти
-- **Файл звіту XLSX:** [`docs/air-quality-report.xlsx`](air-quality-report.xlsx) (обсяг: 392 КБ, містить аркуші *Air Quality Records* та *Analytics Summary*).
-- **Файл звіту DOCX:** [`docs/air-quality-report.docx`](air-quality-report.docx) (обсяг: 98 КБ, оформлений титульний аркуш, таблиці та 3 вбудовані графіки).
+- **Файл звіту XLSX:** [`Reports/air-quality-report.xlsx`](air-quality-report.xlsx) (обсяг: 392 КБ, містить аркуші *Air Quality Records* та *Analytics Summary*).
+- **Файл звіту DOCX:** [`Reports/air-quality-report.docx`](air-quality-report.docx) (обсяг: 98 КБ, оформлений титульний аркуш, таблиці та 3 вбудовані графіки).
 
 ### Додаток C. Експортовані приклади
 - `src/lab1/lab1.Infrastructure/Data/aqi_data.csv` (CSV).
@@ -499,6 +499,6 @@ public byte[] CreateTopPollutedBarChart(IEnumerable<AirQualityRecord> records)
 - `src/lab1/lab1.Infrastructure/Data/Xlsx/air_quality.xlsx` (XLSX).
 
 ### Додаток D. Графічні візуалізації
-- [`docs/charts/top-polluted.png`](charts/top-polluted.png) — Стовпчаста діаграма Топ-10 міст.
-- [`docs/charts/distribution.png`](charts/distribution.png) — Кругова діаграма розподілу категорій.
-- [`docs/charts/monthly-trend.png`](charts/monthly-trend.png) — Сезонний графік середньомісячного рівня PM2.5.
+- [`Reports/charts/top-polluted.png`](charts/top-polluted.png) — Стовпчаста діаграма Топ-10 міст.
+- [`Reports/charts/distribution.png`](charts/distribution.png) — Кругова діаграма розподілу категорій.
+- [`Reports/charts/monthly-trend.png`](charts/monthly-trend.png) — Сезонний графік середньомісячного рівня PM2.5.
