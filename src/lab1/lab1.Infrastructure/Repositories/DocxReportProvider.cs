@@ -1,376 +1,264 @@
+using System;
+using System.Buffers.Binary;
 using System.Globalization;
+using System.IO;
+using System.Threading.Tasks;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using lab1.Application.DTOs;
 using lab1.Application.Repositories;
-
 using A = DocumentFormat.OpenXml.Drawing;
 using DW = DocumentFormat.OpenXml.Drawing.Wordprocessing;
 using PIC = DocumentFormat.OpenXml.Drawing.Pictures;
 
 namespace lab1.Infrastructure.Repositories;
 
+// генератор DOCX. Діаграми мають бути у форматі png
+
 public class DocxReportProvider : IDocxReportProvider
 {
-    private const string AccentColor = "1F4E78";
-    private const string AccentLightColor = "D9EAF7";
-    private const string AlternateRowColor = "F4F7FA";
-    private const string BorderColor = "A6A6A6";
-    private const string WhiteColor = "FFFFFF";
+    private const string Font = "Times New Roman";
+    private const string HeaderFill = "E7EDF4";
+    private const int PageWidth = 11906;  // A4
+    private const int PageHeight = 16838;
+    private const int Margin = 1134;      // 20 mm
+    private const int ContentWidth = PageWidth - 2 * Margin;
+    private const long ImageMaxWidth = 5_760_000L;  // ~16 cm
+    private const long ImageMaxHeight = 2_520_000L; // 7 cm
+    private static readonly CultureInfo Ua = CultureInfo.GetCultureInfo("uk-UA");
 
-    private static readonly CultureInfo ReportCulture = CultureInfo.GetCultureInfo("uk-UA");
-
-    public async Task<Stream> CreateReportAsync(
+    public Task<Stream> CreateReportAsync(
         ReportDataDto reportData,
         ReportMetadataDto metadata,
         byte[]? topPollutedChart,
         byte[]? distributionChart,
         byte[]? monthlyTrendChart)
     {
-        await SaveChartsAsync(topPollutedChart, distributionChart, monthlyTrendChart);
+        ArgumentNullException.ThrowIfNull(reportData);
+        ArgumentNullException.ThrowIfNull(metadata);
 
-        var outputStream = new MemoryStream();
-
-        using (var document = WordprocessingDocument.Create(outputStream, WordprocessingDocumentType.Document, true))
+        var stream = new MemoryStream();
+        try
         {
-            var mainPart = document.AddMainDocumentPart();
-            mainPart.Document = new Document();
-            var body = new Body();
-            mainPart.Document.Append(body);
+            using (var doc = WordprocessingDocument.Create(stream, WordprocessingDocumentType.Document, true))
+            {
+                var main = doc.AddMainDocumentPart();
+                main.Document = new Document(new Body());
+                var body = main.Document.Body!;
 
-            AddTitlePage(body, metadata);
-            AddPageBreak(body);
+                AddTitle(body, metadata);
+                AddDataset(body, metadata);
+                AddStatistics(body, reportData);
+                AddTables(body, reportData);
+                AddCharts(main, body, topPollutedChart, distributionChart, monthlyTrendChart);
 
-            AddDatasetSection(body, metadata);
-            AddMetricsSection(body, reportData);
-            AddPageBreak(body);
+                body.Append(new SectionProperties(
+                    new PageSize { Width = (uint)PageWidth, Height = (uint)PageHeight },
+                    new PageMargin { Top = Margin, Bottom = Margin, Left = (uint)Margin, Right = (uint)Margin }));
+                main.Document.Save();
+            }
 
-            AddSummaryTablesSection(body, reportData);
-            AddPageBreak(body);
-
-            AddChartsSection(mainPart, body, topPollutedChart, distributionChart, monthlyTrendChart);
-
-            AddSectionProperties(body);
-
-            mainPart.Document.Save();
+            stream.Position = 0;
+            return Task.FromResult<Stream>(stream);
         }
-
-        outputStream.Position = 0;
-        return outputStream;
+        catch
+        {
+            stream.Dispose();
+            throw;
+        }
     }
 
-    private static void AddTitlePage(Body body, ReportMetadataDto metadata)
+    private static void AddTitle(Body body, ReportMetadataDto meta)
     {
-        body.Append(CreateCenteredParagraph("МІНІСТЕРСТВО ОСВІТИ І НАУКИ УКРАЇНИ", 20, false, before: 400, after: 100));
-        body.Append(CreateCenteredParagraph("НАЦІОНАЛЬНИЙ УНІВЕРСИТЕТ «ОСТРОЗЬКА АКАДЕМІЯ»", 22, true, after: 600));
+        body.Append(P("МІНІСТЕРСТВО ОСВІТИ І НАУКИ УКРАЇНИ", 12, center: true, after: 100));
+        body.Append(P("НАЦІОНАЛЬНИЙ УНІВЕРСИТЕТ «ОСТРОЗЬКА АКАДЕМІЯ»", 12, bold: true, center: true));
+        body.Append(P("ЗВІТ", 18, bold: true, center: true, before: 1500));
+        body.Append(P("до лабораторної роботи №1", 14, center: true));
+        body.Append(P("Аналіз та візуалізація даних якості повітря", 14, bold: true, center: true));
+        body.Append(P("Дисципліна: Програмування мовою C# (.NET)", 12, center: true, after: 700));
 
-        body.Append(CreateCenteredParagraph("ЗВІТ", 36, true, before: 1000, after: 100));
-        body.Append(CreateCenteredParagraph("до лабораторної роботи №1", 26, false, after: 100));
-        body.Append(CreateCenteredParagraph("Аналіз та візуалізація даних якості повітря", 30, true, after: 80));
-        body.Append(CreateCenteredParagraph("Дисципліна: Програмування мовою C# (.NET)", 22, false, after: 1200));
-
-        var metaTable = CreateTable();
-        AddMetaRow(metaTable, "Студент:", string.IsNullOrWhiteSpace(metadata.StudentName) ? "Студент" : metadata.StudentName);
-        AddMetaRow(metaTable, "Група:", string.IsNullOrWhiteSpace(metadata.Group) ? "КН" : metadata.Group);
-        AddMetaRow(metaTable, "Варіант:", string.IsNullOrWhiteSpace(metadata.Variant) ? "1" : metadata.Variant);
-        body.Append(metaTable);
-
-        body.Append(CreateCenteredParagraph("Острог — 2026", 20, false, before: 2000, after: 200));
+        var widths = new[] { 2300, ContentWidth - 2300 };
+        var table = MakeTable(widths, borders: false);
+        AddRow(table, widths, new[] { "Студент:", Or(meta.StudentName, "Студент") });
+        AddRow(table, widths, new[] { "Група:", Or(meta.Group, "КН") });
+        AddRow(table, widths, new[] { "Варіант:", Or(meta.Variant, "1") });
+        body.Append(table);
+        body.Append(P("Острог — 2026", 12, center: true, before: 1000));
     }
 
-    private static void AddDatasetSection(Body body, ReportMetadataDto metadata)
+    private static void AddDataset(Body body, ReportMetadataDto meta)
     {
-        body.Append(CreateHeading1("1. Опис предметної області та набору даних"));
-
-        body.Append(CreateParagraph(
-            "Предметна область цієї лабораторної роботи присвячена аналізу показників якості повітря (концентрації часток PM2.5) " +
-            "у містах світу. Набір даних включає інформацію про назву та країну міста, його рейтинг, середньорічний рівень забруднення, " +
-            "а також детальні помісячні виміри від січня до грудня.",
-            indent: true));
-
-        body.Append(CreateParagraph(
-            $"Характеристика набору даних: {metadata.DatasetDescription}",
-            indent: true));
-
-        body.Append(CreateParagraph("Основні атрибути набору даних:", bold: true));
-
-        body.Append(CreateBulletPoint("Rank — порядковий номер міста за рівнем забруднення;"));
-        body.Append(CreateBulletPoint("CityAndCountry — назва міста та країна спостереження;"));
-        body.Append(CreateBulletPoint("AveragePollution — середньорічна концентрація дрібнодисперсних часток (PM2.5, мкг/м³);"));
-        body.Append(CreateBulletPoint("MonthlyMeasurements — концентрація часток по місяцях (January – December)."));
+        body.Append(H("1. Опис предметної області та набору даних", newPage: true));
+        body.Append(P("Предметна область цієї лабораторної роботи — аналіз якості повітря (PM2.5) у містах світу. " +
+                      "Набір даних містить місто, країну, рейтинг, середньорічну концентрацію та помісячні виміри.", indent: true));
+        body.Append(P("Характеристика набору даних: " + Or(meta.DatasetDescription, "не вказано"), indent: true));
+        body.Append(P("Основні атрибути набору даних:", bold: true));
+        body.Append(Bullet("Rank — порядковий номер міста;"));
+        body.Append(Bullet("CityAndCountry — назва міста та країна;"));
+        body.Append(Bullet("AveragePollution — середньорічна концентрація PM2.5 (мкг/м³);"));
+        body.Append(Bullet("MonthlyMeasurements — концентрація за місяцями (January–December)."));
     }
 
-    private static void AddMetricsSection(Body body, ReportDataDto reportData)
+    private static void AddStatistics(Body body, ReportDataDto data)
     {
-        body.Append(CreateHeading1("2. Загальні статистичні показники"));
-
-        body.Append(CreateParagraph(
-            "На основі завантаженого датасету було проведено аналітичну обробку та обчислення ключових описових статистик.",
-            indent: true));
-
-        var table = CreateStyledTable();
-        AddTableHeader(table, ["Метрика", "Значення"]);
-
-        AddDataRow(table, ["Загальна кількість спостережень (міст)", reportData.TotalRecords.ToString(ReportCulture)]);
-        AddDataRow(table, ["Середній показник PM2.5 (середнє арифметичне)", FormatNumber(reportData.AveragePollutionMean)]);
-        AddDataRow(table, ["Медіанний рівень PM2.5", FormatNumber(reportData.MedianPollution)]);
-        AddDataRow(table, ["Мінімальний рівень PM2.5", FormatNumber(reportData.MinPollution)]);
-        AddDataRow(table, ["Максимальний рівень PM2.5", FormatNumber(reportData.MaxPollution)]);
-
+        body.Append(H("2. Загальні статистичні показники"));
+        body.Append(P("Для завантаженого набору даних обчислено основні статистичні показники.", indent: true));
+        var widths = new[] { 6300, ContentWidth - 6300 };
+        var table = MakeTable(widths);
+        AddRow(table, widths, new[] { "Метрика", "Значення" }, header: true);
+        AddRow(table, widths, new[] { "Кількість міст", data.TotalRecords.ToString(Ua) });
+        AddRow(table, widths, new[] { "Середній рівень PM2.5", N(data.AveragePollutionMean) });
+        AddRow(table, widths, new[] { "Медіана PM2.5", N(data.MedianPollution) });
+        AddRow(table, widths, new[] { "Мінімальний рівень PM2.5", N(data.MinPollution) });
+        AddRow(table, widths, new[] { "Максимальний рівень PM2.5", N(data.MaxPollution) });
         body.Append(table);
     }
 
-    private static void AddSummaryTablesSection(Body body, ReportDataDto reportData)
+    private static void AddTables(Body body, ReportDataDto data)
     {
-        body.Append(CreateHeading1("3. Зведені аналітичні таблиці"));
+        body.Append(H("3. Зведені аналітичні таблиці", newPage: true));
+        body.Append(H("3.1. Розподіл міст за категоріями безпеки повітря", level: 2));
+        var widths = new[] { 3300, 1900, 1500, ContentWidth - 6700 };
+        var table = MakeTable(widths);
+        AddRow(table, widths, new[] { "Категорія", "Кількість", "Частка (%)", "Середнє PM2.5" }, header: true);
+        foreach (var item in data.ByCategory)
+            AddRow(table, widths, new[] { item.Category ?? "", item.RecordCount.ToString(Ua),
+                                         N(item.Percentage) + "%", N(item.AveragePollution) });
+        body.Append(table);
 
-        body.Append(CreateHeading2("3.1. Розподіл міст за категоріями безпеки повітря"));
-        var categoryTable = CreateStyledTable();
-        AddTableHeader(categoryTable, ["Категорія якості", "Кількість міст", "Частка (%)", "Середнє PM2.5"]);
+        body.Append(H("3.2. Сезонні коливання за місяцями", level: 2));
+        widths = new[] { 4000, ContentWidth - 4000 };
+        table = MakeTable(widths);
+        AddRow(table, widths, new[] { "Місяць", "Середній рівень PM2.5" }, header: true);
+        foreach (var item in data.MonthlyAverages)
+            AddRow(table, widths, new[] { item.Month ?? "", N(item.AveragePollution) });
+        body.Append(table);
+    }
 
-        foreach (var row in reportData.ByCategory)
+    private static void AddCharts(MainDocumentPart main, Body body, byte[]? top, byte[]? distribution, byte[]? monthly)
+    {
+        body.Append(H("4. Графічна візуалізація", newPage: true));
+        uint id = 1;
+        if (top is not null) AddImage(main, body, top, id++, "Топ-10 найбільш забруднених міст світу");
+        if (distribution is not null) AddImage(main, body, distribution, id++, "Розподіл міст за категоріями якості повітря");
+        if (monthly is not null) AddImage(main, body, monthly, id++, "Сезонна динаміка забруднення повітря");
+        if (id == 1) body.Append(P("Графіки не надано."));
+    }
+
+    // All paragraph formatting is defined here: no implicit Word styles.
+    private static Paragraph P(string text, int size = 12, bool bold = false, bool center = false,
+        int before = 0, int after = 120, bool indent = false,
+        bool keepNext = false, bool newPage = false, int? hanging = null)
+    {
+        var pp = new ParagraphProperties();
+        if (keepNext) pp.Append(new KeepNext());
+        if (keepNext) pp.Append(new KeepLines());
+        if (newPage) pp.Append(new PageBreakBefore());
+        pp.Append(new SpacingBetweenLines
         {
-            AddDataRow(categoryTable, [
-                row.Category,
-                row.RecordCount.ToString(ReportCulture),
-                FormatNumber(row.Percentage) + "%",
-                FormatNumber(row.AveragePollution)
-            ]);
-        }
-        body.Append(categoryTable);
+            Before = before.ToString(CultureInfo.InvariantCulture),
+            After = after.ToString(CultureInfo.InvariantCulture),
+            Line = "300",
+            LineRule = LineSpacingRuleValues.Auto
+        });
+        if (indent) pp.Append(new Indentation { FirstLine = "600" });
+        if (hanging.HasValue) pp.Append(new Indentation { Left = "720", Hanging = hanging.Value.ToString(CultureInfo.InvariantCulture) });
+        if (center) pp.Append(new Justification { Val = JustificationValues.Center });
 
-        body.Append(CreateHeading2("3.2. Сезонні коливання за місяцями (середні значення)"));
-        var monthTable = CreateStyledTable();
-        AddTableHeader(monthTable, ["Місяць", "Середній рівень PM2.5"]);
+        var rp = new RunProperties(new RunFonts { Ascii = Font, HighAnsi = Font, EastAsia = Font, ComplexScript = Font });
+        if (bold) rp.Append(new Bold());
+        rp.Append(new FontSize { Val = (size * 2).ToString(CultureInfo.InvariantCulture) });
+        return new Paragraph(pp, new Run(rp, new Text(text ?? "") { Space = SpaceProcessingModeValues.Preserve }));
+    }
 
-        foreach (var m in reportData.MonthlyAverages)
+    private static Paragraph H(string text, int level = 1, bool newPage = false) =>
+        P(text, level == 1 ? 14 : 12, bold: true, before: level == 1 ? 220 : 150,
+          after: 110, keepNext: true, newPage: newPage);
+
+    // A literal bullet avoids an additional numbering part; hanging indentation keeps wrapped lines aligned.
+    private static Paragraph Bullet(string text) => P("•  " + text, after: 50, hanging: 360);
+
+    private static Table MakeTable(int[] widths, bool borders = true)
+    {
+        var props = new TableProperties(
+            new TableWidth { Width = ContentWidth.ToString(CultureInfo.InvariantCulture), Type = TableWidthUnitValues.Dxa });
+        if (borders)
+            props.Append(new TableBorders(
+                new TopBorder { Val = BorderValues.Single, Size = 4 },
+                new LeftBorder { Val = BorderValues.Single, Size = 4 },
+                new BottomBorder { Val = BorderValues.Single, Size = 4 },
+                new RightBorder { Val = BorderValues.Single, Size = 4 },
+                new InsideHorizontalBorder { Val = BorderValues.Single, Size = 4 },
+                new InsideVerticalBorder { Val = BorderValues.Single, Size = 4 }));
+        props.Append(new TableLayout { Type = TableLayoutValues.Fixed });
+        var grid = new TableGrid();
+        foreach (var width in widths)
+            grid.Append(new GridColumn { Width = width.ToString(CultureInfo.InvariantCulture) });
+        return new Table(props, grid);
+    }
+
+    private static void AddRow(Table table, int[] widths, string[] values, bool header = false)
+    {
+        var rowProps = new TableRowProperties(new CantSplit());
+        if (header) rowProps.Append(new TableHeader());
+        var row = new TableRow(rowProps);
+        for (int i = 0; i < widths.Length; i++)
         {
-            AddDataRow(monthTable, [
-                m.Month,
-                FormatNumber(m.AveragePollution)
-            ]);
-        }
-        body.Append(monthTable);
-    }
-
-    private static void AddChartsSection(
-        MainDocumentPart mainPart,
-        Body body,
-        byte[]? topPollutedChart,
-        byte[]? distributionChart,
-        byte[]? monthlyTrendChart)
-    {
-        body.Append(CreateHeading1("4. Графічна візуалізація"));
-
-        uint imageId = 1;
-
-        if (topPollutedChart is not null)
-        {
-            AddFigure(mainPart, body, topPollutedChart, imageId++, "Рисунок 1 — Топ-10 найбільш забруднених міст світу");
-        }
-
-        if (distributionChart is not null)
-        {
-            AddFigure(mainPart, body, distributionChart, imageId++, "Рисунок 2 — Розподіл міст за категоріями якості повітря");
-        }
-
-        if (monthlyTrendChart is not null)
-        {
-            AddFigure(mainPart, body, monthlyTrendChart, imageId, "Рисунок 3 — Сезонна динаміка забруднення повітря по місяцях");
-        }
-    }
-
-    private static void AddFigure(MainDocumentPart mainPart, Body body, byte[] imageBytes, uint imageId, string caption)
-    {
-        var imagePart = mainPart.AddImagePart(ImagePartType.Png);
-        using (var stream = new MemoryStream(imageBytes))
-        {
-            imagePart.FeedData(stream);
-        }
-
-        var relationshipId = mainPart.GetIdOfPart(imagePart);
-        const long imageWidth = 5_394_960L;
-        const long imageHeight = 3_236_976L;
-
-        var drawing = new Drawing(
-            new DW.Inline(
-                new DW.Extent { Cx = imageWidth, Cy = imageHeight },
-                new DW.EffectExtent { LeftEdge = 0, TopEdge = 0, RightEdge = 0, BottomEdge = 0 },
-                new DW.DocProperties { Id = imageId, Name = caption },
-                new DW.NonVisualGraphicFrameDrawingProperties(new A.GraphicFrameLocks { NoChangeAspect = true }),
-                new A.Graphic(
-                    new A.GraphicData(
-                        new PIC.Picture(
-                            new PIC.NonVisualPictureProperties(
-                                new PIC.NonVisualDrawingProperties { Id = imageId, Name = caption },
-                                new PIC.NonVisualPictureDrawingProperties()),
-                            new PIC.BlipFill(
-                                new A.Blip { Embed = relationshipId, CompressionState = A.BlipCompressionValues.Print },
-                                new A.Stretch(new A.FillRectangle())),
-                            new PIC.ShapeProperties(
-                                new A.Transform2D(new A.Offset { X = 0, Y = 0 }, new A.Extents { Cx = imageWidth, Cy = imageHeight }),
-                                new A.PresetGeometry(new A.AdjustValueList()) { Preset = A.ShapeTypeValues.Rectangle }))
-                        ) { Uri = "http://schemas.openxmlformats.org/drawingml/2006/picture" }))
-            {
-                DistanceFromTop = 0,
-                DistanceFromBottom = 0,
-                DistanceFromLeft = 0,
-                DistanceFromRight = 0
-            });
-
-        var p = new Paragraph(new Run(drawing));
-        p.ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Center });
-        body.Append(p);
-
-        body.Append(CreateCenteredParagraph(caption, 20, false, before: 60, after: 200));
-    }
-
-    private static async Task SaveChartsAsync(byte[]? chart1, byte[]? chart2, byte[]? chart3)
-    {
-        var directory = Path.Combine(Directory.GetCurrentDirectory(), "Reports", "Charts");
-        Directory.CreateDirectory(directory);
-
-        if (chart1 is not null) await File.WriteAllBytesAsync(Path.Combine(directory, "top-polluted.png"), chart1);
-        if (chart2 is not null) await File.WriteAllBytesAsync(Path.Combine(directory, "distribution.png"), chart2);
-        if (chart3 is not null) await File.WriteAllBytesAsync(Path.Combine(directory, "monthly-trend.png"), chart3);
-    }
-
-    private static Paragraph CreateHeading1(string text)
-    {
-        var p = CreateParagraph(text, 28, true, before: 240, after: 120);
-        p.ParagraphProperties!.ParagraphStyleId = new ParagraphStyleId { Val = "Heading1" };
-        return p;
-    }
-
-    private static Paragraph CreateHeading2(string text)
-    {
-        var p = CreateParagraph(text, 24, true, before: 180, after: 80);
-        p.ParagraphProperties!.ParagraphStyleId = new ParagraphStyleId { Val = "Heading2" };
-        return p;
-    }
-
-    private static Paragraph CreateParagraph(string text, int fontSize = 24, bool bold = false, int before = 0, int after = 100, bool indent = false)
-    {
-        var p = new Paragraph();
-        var props = new ParagraphProperties
-        {
-            SpacingBetweenLines = new SpacingBetweenLines { Before = before.ToString(), After = after.ToString(), Line = "276", LineRule = LineSpacingRuleValues.Auto }
-        };
-
-        if (indent) props.Indentation = new Indentation { FirstLine = "720" };
-        p.Append(props);
-
-        var run = new Run();
-        var runProps = new RunProperties(new RunFonts { Ascii = "Times New Roman", HighAnsi = "Times New Roman" }, new FontSize { Val = fontSize.ToString() });
-        if (bold) runProps.Bold = new Bold();
-        run.Append(runProps);
-        run.Append(new Text(text));
-        p.Append(run);
-
-        return p;
-    }
-
-    private static Paragraph CreateCenteredParagraph(string text, int fontSize = 24, bool bold = false, int before = 0, int after = 100)
-    {
-        var p = CreateParagraph(text, fontSize, bold, before, after);
-        p.ParagraphProperties!.Justification = new Justification { Val = JustificationValues.Center };
-        return p;
-    }
-
-    private static Paragraph CreateBulletPoint(string text)
-    {
-        var p = new Paragraph();
-        p.ParagraphProperties = new ParagraphProperties
-        {
-            Indentation = new Indentation { Left = "720", Hanging = "360" },
-            SpacingBetweenLines = new SpacingBetweenLines { After = "60" }
-        };
-
-        var runBullet = new Run(new RunProperties(new FontSize { Val = "22" }), new Text("•  "));
-        var runText = new Run(new RunProperties(new FontSize { Val = "22" }), new Text(text));
-        p.Append(runBullet, runText);
-        return p;
-    }
-
-    private static void AddPageBreak(Body body)
-    {
-        body.Append(new Paragraph(new Run(new Break { Type = BreakValues.Page })));
-    }
-
-    private static Table CreateTable() => new(new TableProperties(new TableWidth { Width = "5000", Type = TableWidthUnitValues.Pct }));
-
-    private static Table CreateStyledTable()
-    {
-        var table = new Table();
-        table.Append(new TableProperties(
-            new TableWidth { Width = "5000", Type = TableWidthUnitValues.Pct },
-            new TableBorders(
-                new TopBorder { Val = BorderValues.Single, Size = 4, Color = BorderColor },
-                new BottomBorder { Val = BorderValues.Single, Size = 4, Color = BorderColor },
-                new LeftBorder { Val = BorderValues.None },
-                new RightBorder { Val = BorderValues.None },
-                new InsideHorizontalBorder { Val = BorderValues.Single, Size = 4, Color = BorderColor },
-                new InsideVerticalBorder { Val = BorderValues.None }
-            )
-        ));
-        return table;
-    }
-
-    private static void AddTableHeader(Table table, string[] headers)
-    {
-        var row = new TableRow();
-        foreach (var header in headers)
-        {
-            var cell = new TableCell(
-                new TableCellProperties(
-                    new Shading { Fill = AccentColor },
-                    new TableCellMargin(new TopMargin { Width = "120" }, new BottomMargin { Width = "120" })
-                ),
-                new Paragraph(new Run(
-                    new RunProperties(new Bold(), new Color { Val = WhiteColor }, new FontSize { Val = "20" }),
-                    new Text(header)
-                ))
-            );
-            row.Append(cell);
+            var cp = new TableCellProperties(
+                new TableCellWidth { Width = widths[i].ToString(CultureInfo.InvariantCulture), Type = TableWidthUnitValues.Dxa });
+            if (header) cp.Append(new Shading { Fill = HeaderFill, Val = ShadingPatternValues.Clear });
+            cp.Append(new TableCellMargin(
+                new TopMargin { Width = "70", Type = TableWidthUnitValues.Dxa },
+                new LeftMargin { Width = "100", Type = TableWidthUnitValues.Dxa },
+                new BottomMargin { Width = "70", Type = TableWidthUnitValues.Dxa },
+                new RightMargin { Width = "100", Type = TableWidthUnitValues.Dxa }));
+            cp.Append(new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center });
+            row.Append(new TableCell(cp, P(values[i], 10, bold: header, after: 0)));
         }
         table.Append(row);
     }
 
-    private static void AddDataRow(Table table, string[] values)
+    private static void AddImage(MainDocumentPart main, Body body, byte[] png, uint id, string description)
     {
-        var row = new TableRow();
-        foreach (var val in values)
-        {
-            var cell = new TableCell(
-                new TableCellProperties(
-                    new TableCellMargin(new TopMargin { Width = "80" }, new BottomMargin { Width = "80" })
-                ),
-                new Paragraph(new Run(
-                    new RunProperties(new FontSize { Val = "20" }),
-                    new Text(val)
-                ))
-            );
-            row.Append(cell);
-        }
-        table.Append(row);
+        //png зберігає розміри у своєму блоці IHDR; бібліотека для обробки зображень не потрібна.
+        if (png.Length < 24 || !png.AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }) ||
+            !png.AsSpan(12, 4).SequenceEqual(new byte[] { 73, 72, 68, 82 }))
+            throw new ArgumentException("Графіки повинні бути у форматі PNG.");
+        uint width = BinaryPrimitives.ReadUInt32BigEndian(png.AsSpan(16, 4));
+        uint height = BinaryPrimitives.ReadUInt32BigEndian(png.AsSpan(20, 4));
+        if (width == 0 || height == 0) throw new ArgumentException("Некоректний розмір PNG.");
+        double scale = Math.Min((double)ImageMaxWidth / width, (double)ImageMaxHeight / height);
+        long cx = (long)Math.Round(width * scale);
+        long cy = (long)Math.Round(height * scale);
+
+        var part = main.AddImagePart(ImagePartType.Png);
+        using (var input = new MemoryStream(png, writable: false)) part.FeedData(input);
+        string rel = main.GetIdOfPart(part);
+        var drawing = new Drawing(new DW.Inline(
+            new DW.Extent { Cx = cx, Cy = cy },
+            new DW.DocProperties { Id = id, Name = $"Chart {id}", Description = description },
+            new A.Graphic(new A.GraphicData(
+                new PIC.Picture(
+                    new PIC.NonVisualPictureProperties(
+                        new PIC.NonVisualDrawingProperties { Id = id, Name = $"Chart {id}" },
+                        new PIC.NonVisualPictureDrawingProperties()),
+                    new PIC.BlipFill(new A.Blip { Embed = rel }, new A.Stretch(new A.FillRectangle())),
+                    new PIC.ShapeProperties(
+                        new A.Transform2D(new A.Offset { X = 0, Y = 0 }, new A.Extents { Cx = cx, Cy = cy }),
+                        new A.PresetGeometry(new A.AdjustValueList()) { Preset = A.ShapeTypeValues.Rectangle })))
+            { Uri = "http://schemas.openxmlformats.org/drawingml/2006/picture" }))
+        { DistanceFromTop = 0, DistanceFromBottom = 0, DistanceFromLeft = 0, DistanceFromRight = 0 });
+
+        body.Append(new Paragraph(
+            new ParagraphProperties(
+                new KeepNext(), new KeepLines(),
+                new SpacingBetweenLines { Before = "120", After = "0" },
+                new Justification { Val = JustificationValues.Center }),
+            new Run(drawing)));
+        body.Append(P($"Рисунок {id} — {description}", 10, center: true, after: 180));
     }
 
-    private static void AddMetaRow(Table table, string label, string value)
-    {
-        var row = new TableRow();
-        row.Append(new TableCell(new Paragraph(new Run(new RunProperties(new Bold(), new FontSize { Val = "22" }), new Text(label)))));
-        row.Append(new TableCell(new Paragraph(new Run(new RunProperties(new FontSize { Val = "22" }), new Text(value)))));
-        table.Append(row);
-    }
-
-    private static void AddSectionProperties(Body body)
-    {
-        var sectionProps = new SectionProperties(
-            new PageMargin { Top = 1440, Bottom = 1440, Left = 1440, Right = 1440 }
-        );
-        body.Append(sectionProps);
-    }
-
-    private static string FormatNumber(double value) => value.ToString("N2", ReportCulture);
+    private static string N(double number) => double.IsFinite(number) ? number.ToString("N2", Ua) : "—";
+    private static string Or(string? value, string fallback) => string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
 }
