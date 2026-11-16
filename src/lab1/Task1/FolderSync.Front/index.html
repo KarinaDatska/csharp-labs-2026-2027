@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head><link rel="icon" href="data:,"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Синхронізатор папок</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<h1>Синхронізатор папок</h1><p class="intro">Порівняйте вміст двох папок і синхронізуйте зміни.</p>
+<form id="syncForm">
+<label class="wide">Папка A <input class="wide" id="source" type="text" required></label>
+<label class="wide">Папка B <input class="wide" id="target" type="text" required></label>
+<label>Напрямок <select id="direction"><option value="SourceToTarget">A → B</option><option value="TargetToSource">B → A</option><option value="Bidirectional">A ↔ B (об’єднання, новіший файл)</option></select></label>
+</div><p>В одному напрямку цільова папка повторює джерело, включно з видаленнями.</p>
+<div class="actions"><button type="submit">Порівняти папки</button><button type="button" id="execute">Синхронізувати</button></div>
+</fieldset>
+</form>
+<output id="status" role="status"></output>
+<div class="scroll"><table><thead><tr><th>Зміна</th><th>Файл</th><th>Звідки</th><th>Куди</th></tr></thead><tbody id="changes"><tr><td colspan="4">Оберіть папки та натисніть «Порівняти папки», щоб побачити зміни.</td></tr></tbody></table></div>
+<script src="main.js"></script>
+</body></html>

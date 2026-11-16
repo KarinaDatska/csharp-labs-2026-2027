@@ -1,0 +1,11 @@
+<Solution>
+  <Project Path="lab1.Domain/lab1.Domain.csproj" />
+  <Project Path="lab1.Application/lab1.Application.csproj" />
+  <Project Path="lab1.Infrastructure/lab1.Infrastructure.csproj" />
+  <Project Path="lab1.WebApi/lab1.WebApi.csproj" />
+  <Folder Name="/Front/">
+    <File Path="lab1.Front/index.html" />
+    <File Path="lab1.Front/main.js" />
+    <File Path="lab1.Front/style.css" />
+  </Folder>
+</Solution>

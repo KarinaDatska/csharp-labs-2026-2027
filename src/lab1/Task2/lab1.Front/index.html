@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head><link rel="icon" href="data:,"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Якість повітря</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<h1>Якість повітря</h1><p class="intro">Дані про забруднення міст: пошук, аналіз і звіти.</p>
+<nav><button data-tab="files">Файл</button><button data-tab="records">Дані</button><button data-tab="charts">Графіки</button><button data-tab="reports">Звіти</button><button id="about">Про програму</button></nav>
+<output id="message" role="status"></output>
+<section id="files">
+<div class="file-block"><h2>Відкрити дані</h2>
+<p>Оберіть файл CSV, JSON, XML або XLSX, щоб почати роботу.</p>
+<div class="toolbar"><label>Файл із даними<input type="file" id="file" accept=".csv,.json,.xml,.xlsx"></label><button id="import" disabled>Імпортувати дані</button></div></div>
+<div class="file-block"><h2>Зберегти дані</h2><div class="toolbar">
+<label>Формат файлу<select id="format"><option value="csv">CSV</option><option value="json">JSON</option><option value="xml">XML</option><option value="xlsx">Excel (XLSX)</option></select></label><button id="export">Завантажити файл</button></div></div>
+</section>
+<section id="records" hidden>
+<h2>Дані</h2>
+<form id="filters">
+<label>Місто або країна<input id="city" type="search" placeholder="Наприклад, Kyiv"></label>
+<label>Мінімальний ранг<input id="minRank" type="number" min="1" step="1" placeholder="Від"></label>
+<label>Максимальний ранг<input id="maxRank" type="number" min="1" step="1" placeholder="До"></label>
+<label>Мінімальне забруднення<input id="minAveragePollution" type="number" min="0" step="any" placeholder="Від"></label>
+<label>Максимальне забруднення<input id="maxAveragePollution" type="number" min="0" step="any" placeholder="До"></label>
+<label>Сортувати за<select id="sortBy"><option value="Rank">Рангом</option><option value="CityAndCountry">Назвою міста</option><option value="AveragePollution">Забрудненням</option></select></label>
+<label>Порядок<select id="descending"><option value="false">За зростанням (А → Я, 1 → 9)</option><option value="true">За спаданням (Я → А, 9 → 1)</option></select></label>
+<div class="actions"><button type="submit">Застосувати фільтри</button><button type="reset">Очистити</button></div>
+</form>
+<output id="summary"></output><button id="add">Додати запис</button>
+<div id="recordsTable" class="scroll"></div>
+<div class="pagination"><button id="previous">Назад</button> <span id="page"></span> <button id="next">Далі</button></div>
+<h2>Групування за країною</h2><div id="groups" class="scroll"></div>
+</section>
+<section id="charts" hidden>
+<h2>Графіки</h2>
+<label>Графік <select id="chartType"><option value="top-polluted">Стовпчиковий: міста / середнє забруднення</option><option value="distribution">Круговий: діапазон / кількість міст</option><option value="monthly-trend">Лінійний: місяць / середнє забруднення</option></select></label>
+<button id="draw">Побудувати</button><button id="saveChart">Зберегти PNG</button>
+<label>Показник Y <select id="chartField"><option value="AveragePollution">Річне середнє</option></select></label>
+<p>Застосовуються фільтри з вкладки «Дані».</p><img id="chart" alt="Графік якості повітря" hidden>
+</section>
+<section id="reports" hidden>
+<h2>Звіти</h2><button id="xlsxReport">XLSX-звіт</button>
+<label>Знімок інтерфейсу для DOCX <input id="screenshot" type="file" accept="image/png"></label>
+<form id="reportForm"><label>ПІБ <input id="student" required></label><label>Група <input id="group" required></label><label>Варіант <input id="variant" value="Якість повітря" required></label><label>Джерело та опис <input id="description" required></label><button>DOCX-звіт</button></form>
+</section>
+<dialog id="editor"><form id="editForm"><h2>Запис</h2><input id="recordId" type="hidden"><label>Ранг <input id="editRank" type="number" min="1" required></label><label>Місто, країна <input id="editCity" required></label><label>Середнє забруднення <input id="editAverage" type="number" min="0" step="any" required></label><fieldset id="months"><legend>Місячні вимірювання</legend></fieldset><button>Зберегти</button><button type="button" id="cancelEdit">Скасувати</button></form></dialog>
+<script src="main.js"></script>
+</body></html>

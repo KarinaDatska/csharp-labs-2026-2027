@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="DroneServiceCenter.App/DroneServiceCenter.App.csproj" />
+  <Project Path="DroneServiceCenter.Data/DroneServiceCenter.Data.csproj" />
+</Solution>

@@ -1,0 +1,11 @@
+<Solution>
+  <Project Path="FolderSync.Domain/FolderSync.Domain.csproj" />
+  <Project Path="FolderSync.Application/FolderSync.Application.csproj" />
+  <Project Path="FolderSync.Infrastructure/FolderSync.Infrastructure.csproj" />
+  <Project Path="FolderSync.WebApi/FolderSync.WebApi.csproj" />
+  <Folder Name="/Front/">
+    <File Path="FolderSync.Front/index.html" />
+    <File Path="FolderSync.Front/main.js" />
+    <File Path="FolderSync.Front/style.css" />
+  </Folder>
+</Solution>

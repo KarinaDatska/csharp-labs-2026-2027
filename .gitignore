@@ -23,3 +23,5 @@ src/lab1/lab1.WebApi/GeneratedFiles/
 src/lab1/lab1.WebApi/Reports/
 Reports/
 GeneratedFiles/
+Outputs/
+.playwright-mcp/

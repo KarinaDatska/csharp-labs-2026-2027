@@ -1,81 +1,59 @@
-<p align="center">
-  <img src="https://www.oa.edu.ua/bootstrap5/im/logo.svg" width="120" alt="Національний університет «Острозька академія»"/>
-</p>
+# Лабораторні роботи C# · 2026–2027
 
-<h1 align="center">Репозиторій лабораторних робіт з C# (2026–2027)</h1>
+Лабораторна №1 складається з двох незалежних застосунків на ASP.NET Core з вебінтерфейсами.
 
-<p align="center">
-  Лабораторні роботи з курсу «Програмування мовою C# (.NET)» | Національний університет «Острозька академія»
-</p>
+```text
+Solution
+└── src/lab1
+    ├── Task1
+    │   ├── FolderSync.Domain
+    │   ├── FolderSync.Application
+    │   ├── FolderSync.Infrastructure
+    │   ├── FolderSync.WebApi
+    │   └── FolderSync.Front
+    └── Task2
+        ├── lab1.Domain
+        ├── lab1.Application
+        ├── lab1.Infrastructure
+        ├── lab1.WebApi
+        └── lab1.Front
+```
 
-<p align="center">
-  <img src="https://img.shields.io/badge/C%23-13.0-blue" alt="C#" />
-  <img src="https://img.shields.io/badge/платформа-.NET%2010.0-purple" alt="Платформа" />
-  <img src="https://img.shields.io/badge/.NET-10.0-512BD4?style=flat&logo=.net&logoColor=white" alt=".NET 10" />
-  <img src="https://img.shields.io/badge/статус-в_процесі-yellow" alt="Статус" />
-  <img src="https://img.shields.io/badge/група-КН--21-brightgreen" alt="Група" />
-</p>
+Завдання 1: аналіз і синхронізація нових, змінених та видалених файлів; напрямки A → B, B → A, двостороннє об’єднання. У двосторонньому режимі відсутні файли копіюються, для змінених обирається новіший файл; за однакового часу — версія A.
 
----
+Завдання 2: імпорт і експорт CSV/JSON/XML/XLSX, попередній перегляд, валідація, редагування, фільтри, сортування, групування, три графіки та звіти XLSX/DOCX. Датасет — показники забруднення повітря у 5 377 містах.
 
-## 📚 Про репозиторій
+Інструкції запуску та перевірки: [RUNNING.md](RUNNING.md). Кожен WebApi сам обслуговує свій Front; JavaScript написаний без фреймворків.
 
-Цей репозиторій містить лабораторні роботи з навчального курсу «Програмування мовою C# (.NET)» у Національному університеті «Острозька академія».  
+У кожному застосунку Domain містить моделі, Application — операції над ними, Infrastructure — доступ до даних, WebApi — HTTP-контролери. Інтерфейс викликає API; обчислення й валідація виконуються на .NET.
 
-Кожна лабораторна робота включає:
-- ✅ Багатошаровий вихідний код за принципами Clean Architecture (`Domain`, `Application`, `Infrastructure`, `WebApi`)
-- ✅ Сучасний інтерактивний SPA вебінтерфейс (HTML5, CSS3, JavaScript ES6+)
-- ✅ Детальний звіт у форматі Markdown із кодом, діаграмами та результатами аналітики
-- ✅ Графічні візуалізації (ScottPlot 5) та згенеровані ділові звіти (DOCX, XLSX)
+Модель другого завдання:
 
----
+```mermaid
+classDiagram
+    AirQualityRecord "1" *-- "1" MonthlyMeasurements
+    class AirQualityRecord {
+        int Id
+        int Rank
+        string CityAndCountry
+        double AveragePollution
+    }
+    class MonthlyMeasurements {
+        double? January
+        double? February
+        double? March
+        double? April
+        double? May
+        double? June
+        double? July
+        double? August
+        double? September
+        double? October
+        double? November
+        double? December
+    }
+```
 
-# 🧪 Лабораторні роботи
+Технології: .NET 10, CsvHelper, System.Text.Json, XML, ClosedXML, Open XML SDK, ScottPlot.
 
-## 🔹 Лабораторна робота №1 – Синхронізація файлової системи та робота з даними у C# (CSV, JSON, XML, XLSX, Звіти, Графіки)
-
-Робота містить **два окремі практичні завдання**:
-
-### Охоплені теми:
-- **Завдання 1. Синхронізація каталогів файлової системи та генератор тестових структур:**
-  - Алгоритм рекурсивного порівняння каталогів (`New`, `Modified`, `Deleted`, `Unchanged`) за часовими мітками модифікації UTC (`File.GetLastWriteTimeUtc`).
-  - Вибір напрямку синхронізації: `SourceToTarget`, `TargetToSource`, `Bidirectional`.
-  - Генератор тестової структури каталогів і файлів з випадковими атрибутами (`TestFileGenerator`).
-- **Завдання 2. Робота з різнорідними даними, аналітика та генерація звітів:**
-  - **Clean Architecture:** Архітектура з чітким розділенням обов'язків (`Domain`, `Application`, `Infrastructure`, `WebApi`, `lab1.Front`).
-  - **Датасет:** Відкритий набір даних якості повітря World Air Quality / IQAir PM2.5 (5 377 міст, 15 показників).
-  - **Імпорт та експорт:** Потокова обробка 4 форматів:
-    - **CSV** за допомогою `CsvHelper` (налаштування культури, потокове читання).
-    - **JSON** через `System.Text.Json` (асинхронна десеріалізація).
-    - **XML** через `System.Xml.Serialization.XmlSerializer`.
-    - **XLSX** за допомогою `ClosedXML`.
-  - **Аналітика та агрегування:** Розрахунок суми, медіани, мінімуму, максимуму, категоризація за шкалою безпеки повітря, фільтрація за параметрами та сортування.
-  - **Візуалізація (ScottPlot 5):** Фонова генерація 3 видів діаграм у PNG (стовпчаста Топ-10, кругова категорій, сезонний лінійний тренд).
-  - **Автоматизована генерація звітів:**
-    - **Excel XLSX-звіт:** Аркуш повного датасету в стилі зебри та аркуш зведеної аналітики (`ClosedXML`).
-    - **Word DOCX-звіт:** Офіційний документ за стандартами (титульна сторінка, реквізити студентки, аналітичні таблиці, вбудовані графіки) через `DocumentFormat.OpenXml`.
-- **Користувацький вебінтерфейс:** Повнофункціональний SPA на чистому HTML5/CSS3/JavaScript з 5 вкладками навігації.
-- **RESTful API:** ASP.NET Core 10 Web API з інтерактивною документацією Swagger / OpenAPI.
-
-📄 **Звіт до роботи:** [Відкрити звіт до Лабораторної роботи №1](./Reports/Lab1_Report.md)  
-🌐 **Вебінтерфейс:** [Відкрити вебінтерфейс (`src/lab1/lab1.Front/index.html`)](./src/lab1/lab1.Front/index.html)
-
----
-
-## 🛠 Використані технології
-
-- **Платформа та мова:** C# 13, .NET 10.0
-- **Web API:** ASP.NET Core Web API, Swagger / OpenAPI
-- **Обробка даних:** `CsvHelper`, `ClosedXML`, `System.Text.Json`, `System.Xml.Serialization`
-- **Генерація документів:** `DocumentFormat.OpenXml`
-- **Побудова графіків:** `ScottPlot 5`
-- **Фронтенд:** Vanilla HTML5, CSS3, Modern JavaScript (Fetch API, Canvas)
-- **Документація:** Markdown
-
----
-
-## 👤 Автор
-
-- **Студентка:** Дацька Карина Богданівна
-- **Група:** КН-21
-- **Заклад:** Національний університет «Острозька академія»
+Авторка: Дацька Карина Богданівна, КН-21, Національний університет «Острозька академія».
